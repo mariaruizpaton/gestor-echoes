@@ -7,10 +7,30 @@ public class MongoService
 
     public MongoService(IConfiguration config)
     {
-        var client = new MongoClient(config.GetConnectionString("MongoDb"));
+        // 1. Leemos la cadena de conexión desde appsettings.json
+        var connectionString = config.GetConnectionString("MongoDb");
+        var client = new MongoClient(connectionString);
+
+        // 2. Definimos el nombre de la base de datos
         _database = client.GetDatabase("EchoesDB");
     }
 
-    public IMongoCollection<Usuario> Usuarios => _database.GetCollection<Usuario>("Usuarios");
-    public IMongoCollection<Echo> Echoes => _database.GetCollection<Echo>("Echoes");
+    // --- COLECCIONES (Equivalente a las Tablas en SQL) ---
+
+    // Colección de Usuarios: Username es el ID único
+    public IMongoCollection<Usuario> Usuarios =>
+        _database.GetCollection<Usuario>("Usuarios");
+
+    // Colección de Echoes: Posts de la red social
+    public IMongoCollection<Echo> Echoes =>
+        _database.GetCollection<Echo>("Echoes");
+
+    // --- MÉTODOS DE APOYO (Opcional pero recomendado) ---
+
+    // Ejemplo: Método rápido para verificar si un usuario existe
+    public async Task<bool> ExisteUsuario(string username)
+    {
+        var count = await Usuarios.CountDocumentsAsync(u => u.Username == username);
+        return count > 0;
+    }
 }

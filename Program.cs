@@ -1,6 +1,12 @@
+using Echoes.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+// Registramos nuestros servicios personalizados para MongoDB y Redis
+builder.Services.AddSingleton<MongoService>();
+builder.Services.AddSingleton<RedisService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
