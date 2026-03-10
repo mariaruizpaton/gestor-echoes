@@ -1,0 +1,6 @@
+@Echoes_HostAddress = http://localhost:5089
+
+GET {{Echoes_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
