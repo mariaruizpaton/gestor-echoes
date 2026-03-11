@@ -15,12 +15,14 @@ var builder = WebApplication.CreateBuilder(args);
 /// Registro de <see cref="MongoService"/> como Singleton.
 /// Maneja la persistencia documental de Usuarios y Echoes (Posts).
 /// </summary>
+/// <author>María</author>
 builder.Services.AddSingleton<MongoService>();
 
 /// <summary>
 /// Registro de <see cref="RedisService"/> como Singleton.
 /// Gestiona el almacenamiento efímero en RAM para sesiones y caché de Timeline (Requisito 2).
 /// </summary>
+/// <author>Marñia</author>
 builder.Services.AddSingleton<RedisService>();
 
 builder.Services.AddControllers();
