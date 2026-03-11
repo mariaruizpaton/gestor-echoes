@@ -5,7 +5,7 @@ using MongoDB.Driver;
 namespace Echoes.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("[controller]")] // Esto mapeará a /Usuarios
 public class UsuariosController : ControllerBase
 {
     private readonly MongoService _mongoService;
@@ -15,28 +15,21 @@ public class UsuariosController : ControllerBase
         _mongoService = mongoService;
     }
 
-    // Requisito 5: POST /usuarios - Registra un nuevo perfil
     [HttpPost]
     public async Task<IActionResult> Registrar([FromBody] Usuario nuevoUsuario)
     {
-        // Validaciones básicas de seguridad
-        if (string.IsNullOrWhiteSpace(nuevoUsuario.Username))
-            return BadRequest("El nombre de usuario es obligatorio.");
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         try
         {
-            // Limpiamos datos por seguridad
             nuevoUsuario.FechaRegistro = DateTime.UtcNow;
-            nuevoUsuario.Siguiendo = new List<string>(); // Empieza sin seguir a nadie
+            nuevoUsuario.Siguiendo = new List<string>();
 
-            // Insertamos en MongoDB
             await _mongoService.Usuarios.InsertOneAsync(nuevoUsuario);
-
-            return CreatedAtAction(nameof(Registrar), new { id = nuevoUsuario.Username }, nuevoUsuario);
+            return CreatedAtAction(nameof(ObtenerPerfil), new { username = nuevoUsuario.Username }, nuevoUsuario);
         }
         catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
         {
-            // Si el [BsonId] ya existe, Mongo lanza esta excepción
             return Conflict($"El nombre de usuario '{nuevoUsuario.Username}' ya está en uso.");
         }
         catch (Exception ex)
@@ -45,7 +38,6 @@ public class UsuariosController : ControllerBase
         }
     }
 
-    // Endpoint auxiliar para verificar que se guardan bien (opcional para pruebas)
     [HttpGet("{username}")]
     public async Task<IActionResult> ObtenerPerfil(string username)
     {
@@ -55,5 +47,23 @@ public class UsuariosController : ControllerBase
 
         if (usuario == null) return NotFound("Usuario no encontrado.");
         return Ok(usuario);
+    }
+
+    // --- NUEVO: Necesario para que el Timeline funcione después ---
+    [HttpPost("{username}/seguir/{targetUsername}")]
+    public async Task<IActionResult> SeguirUsuario(string username, string targetUsername)
+    {
+        // 1. Verificamos que el usuario a seguir existe
+        var target = await _mongoService.Usuarios.Find(u => u.Username == targetUsername).FirstOrDefaultAsync();
+        if (target == null) return NotFound("El usuario que intentas seguir no existe.");
+
+        // 2. Añadimos el targetUsername a la lista 'Siguiendo' del usuario origen
+        var filter = Builders<Usuario>.Filter.Eq(u => u.Username, username);
+        var update = Builders<Usuario>.Update.AddToSet(u => u.Siguiendo, targetUsername);
+
+        var result = await _mongoService.Usuarios.UpdateOneAsync(filter, update);
+
+        if (result.MatchedCount == 0) return NotFound("Usuario origen no encontrado.");
+        return Ok($"Ahora sigues a {targetUsername}");
     }
 }

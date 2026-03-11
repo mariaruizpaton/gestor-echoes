@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  # Base de Datos Documental
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+  # Base de Datos Clave-Valor
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+  # Base de Datos de Familias de Columnas
+  cassandra:
+    image: cassandra:latest
+    ports:
+      - "9042:9042"
+  # Base de Datos Orientada a Grafos
+  neo4j:
+    image: neo4j:latest
+    environment:
+      NEO4J_AUTH: neo4j/password
+    ports:
+      - "7474:7474" # Interfaz web
+      - "7687:7687" # Puerto de conexión para drivers
