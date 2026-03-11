@@ -1,4 +1,5 @@
 ﻿using Echoes.Services;
+using Echoes.Models;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 
