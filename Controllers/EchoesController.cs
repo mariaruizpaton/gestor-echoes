@@ -36,6 +36,7 @@ public class EchoesController : ControllerBase
     /// <param name="contenido">Texto del post (máx 280).</param>
     /// <param name="imagenes">Lista de archivos físicos (imágenes).</param>
     [HttpPost]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> Publicar(
         [FromForm] string autor,
         [FromForm] string contenido,

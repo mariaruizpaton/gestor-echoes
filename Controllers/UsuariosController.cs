@@ -5,8 +5,12 @@ using MongoDB.Driver;
 
 namespace Echoes.Controllers;
 
+/// <summary>
+/// Controlador para la gestión de perfiles de usuario y relaciones sociales.
+/// </summary>
+/// <author>Maria</author>
 [ApiController]
-[Route("[controller]")] // Esto mapeará a /Usuarios
+[Route("[controller]")]
 public class UsuariosController : ControllerBase
 {
     private readonly MongoService _mongoService;
@@ -16,6 +20,10 @@ public class UsuariosController : ControllerBase
         _mongoService = mongoService;
     }
 
+    /// <summary>
+    /// Registra un nuevo perfil en el motor documental (Requisito 5).
+    /// </summary>
+    /// <param name="nuevoUsuario">Datos del usuario a registrar.</param>
     [HttpPost]
     public async Task<IActionResult> Registrar([FromBody] Usuario nuevoUsuario)
     {
@@ -39,6 +47,9 @@ public class UsuariosController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Recupera la información de un perfil específico.
+    /// </summary>
     [HttpGet("{username}")]
     public async Task<IActionResult> ObtenerPerfil(string username)
     {
@@ -50,15 +61,15 @@ public class UsuariosController : ControllerBase
         return Ok(usuario);
     }
 
-    // --- NUEVO: Necesario para que el Timeline funcione después ---
+    /// <summary>
+    /// Establece una relación de seguimiento entre dos usuarios.
+    /// </summary>
     [HttpPost("{username}/seguir/{targetUsername}")]
     public async Task<IActionResult> SeguirUsuario(string username, string targetUsername)
     {
-        // 1. Verificamos que el usuario a seguir existe
         var target = await _mongoService.Usuarios.Find(u => u.Username == targetUsername).FirstOrDefaultAsync();
         if (target == null) return NotFound("El usuario que intentas seguir no existe.");
 
-        // 2. Añadimos el targetUsername a la lista 'Siguiendo' del usuario origen
         var filter = Builders<Usuario>.Filter.Eq(u => u.Username, username);
         var update = Builders<Usuario>.Update.AddToSet(u => u.Siguiendo, targetUsername);
 

@@ -5,6 +5,10 @@ using MongoDB.Driver;
 
 namespace Echoes.Controllers;
 
+/// <summary>
+/// Gestiona la autenticación y creación de sesiones efímeras en Redis.
+/// </summary>
+/// <author>Maria</author>
 [Route("[controller]")]
 [ApiController]
 public class AuthController : ControllerBase
@@ -18,6 +22,9 @@ public class AuthController : ControllerBase
         _redis = redis;
     }
 
+    /// <summary>
+    /// Simula un inicio de sesión y crea una sesión con TTL de 30 min.
+    /// </summary>
     [HttpPost("login")]
     public async Task<IActionResult> Login(string username) // Simplificado para el ejercicio
     {
