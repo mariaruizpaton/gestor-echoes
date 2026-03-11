@@ -30,35 +30,52 @@ public class EchoesController : ControllerBase
     }
 
     /// <summary>
-    /// Publica un nuevo post en la red social.
+    /// Publica un nuevo post aceptando contenido y archivos multimedia opcionales (Requisito 4 y 5).
     /// </summary>
-    /// <remarks>
-    /// Implementa el Requisito 4: Los archivos multimedia se renombran a formato UUID.webp 
-    /// para evitar colisiones en el almacenamiento físico y optimizar la entrega web.
-    /// </remarks>
-    /// <param name="nuevoEcho">Objeto Echo recibido en el cuerpo de la petición.</param>
-    /// <returns>El objeto Echo creado con sus identificadores y nombres de archivos procesados.</returns>
-    /// <response code="200">Post publicado exitosamente.</response>
-    /// <response code="400">Si el autor no existe en el sistema.</response>
+    /// <param name="autor">Username del autor.</param>
+    /// <param name="contenido">Texto del post (máx 280).</param>
+    /// <param name="imagenes">Lista de archivos físicos (imágenes).</param>
     [HttpPost]
-    public async Task<IActionResult> Publicar([FromBody] Echo nuevoEcho)
+    public async Task<IActionResult> Publicar(
+        [FromForm] string autor,
+        [FromForm] string contenido,
+        List<IFormFile>? imagenes) // Acepta imágenes opcionalmente
     {
-        // 1. Validar integridad referencial en el motor documental
-        if (!await _mongo.ExisteUsuario(nuevoEcho.Autor))
-            return BadRequest("El autor del post no existe.");
+        // 1. Validaciones básicas
+        if (!await _mongo.ExisteUsuario(autor)) return BadRequest("Autor no existe.");
+        if (contenido.Length > 280) return BadRequest("Contenido demasiado largo.");
 
-        // 2. Procesamiento de nombres de archivos (Requisito 4)
-        if (nuevoEcho.Multimedia != null && nuevoEcho.Multimedia.Count > 0)
+        var nuevoEcho = new Echo
         {
-            nuevoEcho.Multimedia = nuevoEcho.Multimedia.Select(m =>
-                $"{Guid.NewGuid()}.webp").ToList();
+            Autor = autor,
+            Contenido = contenido,
+            FechaPublicacion = DateTime.UtcNow,
+            Multimedia = new List<string>()
+        };
+
+        // 2. PROCESAMIENTO FÍSICO (Requisito 4)
+        if (imagenes != null && imagenes.Count > 0)
+        {
+            var rootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+            foreach (var file in imagenes)
+            {
+                // Generamos el nombre según el requisito: UUID + .webp
+                string fileName = $"{Guid.NewGuid()}.webp";
+                string fullPath = Path.Combine(rootPath, fileName);
+
+                // Guardamos el archivo físico en el disco
+                using (var stream = new FileStream(fullPath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // Guardamos SOLO el nombre en la base de datos
+                nuevoEcho.Multimedia.Add(fileName);
+            }
         }
 
-        nuevoEcho.FechaPublicacion = DateTime.UtcNow;
-        nuevoEcho.Likes = 0;
-
         await _mongo.Echoes.InsertOneAsync(nuevoEcho);
-
         return Ok(nuevoEcho);
     }
 
